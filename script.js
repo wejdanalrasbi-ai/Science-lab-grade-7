@@ -9222,3 +9222,195 @@ if (startButton) {
   }
 
 })();
+/* =========================================================
+   فتح الانتقال من المحطة 7 إلى المحطة 8
+   ضعيه آخر script.js
+========================================================= */
+
+(() => {
+
+  function unlockStation8() {
+
+    // نسجل المحطة 7 كمكتملة
+    if (
+      typeof state !== "undefined" &&
+      Array.isArray(state.completed)
+    ) {
+      if (!state.completed.includes(7)) {
+        state.completed.push(7);
+      }
+    }
+
+    // حفظ التقدم
+    if (typeof saveState === "function") {
+      saveState();
+    }
+
+    // إعادة رسم الخريطة حتى تظهر المحطة 8 مفتوحة
+    if (typeof renderMap === "function") {
+      renderMap();
+    }
+  }
+
+
+  document.addEventListener("click", function (e) {
+
+    if (
+      typeof currentLesson === "undefined" ||
+      Number(currentLesson) !== 7
+    ) return;
+
+    const btn = e.target.closest("button");
+
+    if (!btn) return;
+
+    const text = (btn.textContent || "").trim();
+
+    // بعد الضغط على زر الإنهاء/المتابعة
+    if (
+      text.includes("إنهاء") ||
+      text.includes("اكتمل") ||
+      text.includes("متابعة") ||
+      text.includes("التالي") ||
+      text.includes("العودة") ||
+      text.includes("المحطات")
+    ) {
+      unlockStation8();
+    }
+
+  }, true);
+
+
+  // احتياط: بمجرد إكمال المحطة 7 نفتح 8
+  if (
+    typeof currentLesson !== "undefined" &&
+    Number(currentLesson) === 7
+  ) {
+    unlockStation8();
+  }
+
+})();
+/* =========================================================
+   FIX — تسجيل استكشافات محطة الهيكل العظمي ✓
+   ضعي هذا في آخر script.js
+========================================================= */
+
+(() => {
+
+  function completeDiscovery(step) {
+
+    if (Number(currentLesson) !== 7) return;
+    if (!state) return;
+
+    // نتأكد أن مكان حفظ الاستكشافات موجود
+    if (!state.discoveries) {
+      state.discoveries = {};
+    }
+
+    if (!state.discoveries[7]) {
+      state.discoveries[7] = [];
+    }
+
+    // تسجيل الخطوة
+    if (!state.discoveries[7].includes(step)) {
+      state.discoveries[7].push(step);
+    }
+
+    // نحاول كذلك استخدام دالة المشروع الأصلية إن كانت موجودة
+    try {
+      if (typeof markDiscovery === "function") {
+        markDiscovery(step);
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof completeStep === "function") {
+        completeStep(step);
+      }
+    } catch (e) {}
+
+    // حفظ التقدم
+    try {
+      if (typeof saveState === "function") {
+        saveState();
+      }
+    } catch (e) {}
+
+    // تحديث علامات الصح فوق
+    try {
+      if (typeof renderDiscoveries === "function") {
+        renderDiscoveries();
+      }
+    } catch (e) {}
+
+    // إذا اكتملت الخطوات الأساسية، افتح السؤال
+    setTimeout(() => {
+      try {
+        if (
+          typeof lessonCoreComplete === "function" &&
+          lessonCoreComplete(7)
+        ) {
+          if (typeof unlockLessonSummary === "function") {
+            unlockLessonSummary(false);
+          }
+        }
+      } catch (e) {}
+    }, 100);
+  }
+
+
+  document.addEventListener("click", function (e) {
+
+    if (
+      typeof currentLesson === "undefined" ||
+      Number(currentLesson) !== 7
+    ) return;
+
+    const el = e.target.closest(
+      "button, [data-bone], .bone, .skeleton-bone, .sk-bone"
+    );
+
+    if (!el) return;
+
+    const text = (el.textContent || "").trim().toLowerCase();
+
+
+    /* ===== تشغيل الأشعة ===== */
+
+    if (
+      text.includes("أشعة") ||
+      text.includes("الأشعة") ||
+      el.id?.toLowerCase().includes("xray") ||
+      el.className?.toString().toLowerCase().includes("xray")
+    ) {
+      completeDiscovery("الأشعة");
+    }
+
+
+    /* ===== فحص أي عظمة ===== */
+
+    const bone =
+      el.closest(
+        "[data-bone], .bone, .skeleton-bone, .sk-bone"
+      );
+
+    if (bone) {
+      completeDiscovery("فحص العظام");
+    }
+
+
+    /* ===== اختبار الانحناء ===== */
+
+    if (
+      text.includes("انحناء") ||
+      text.includes("انحني") ||
+      text.includes("العمود الفقري") ||
+      el.id?.toLowerCase().includes("bend") ||
+      el.className?.toString().toLowerCase().includes("bend")
+    ) {
+      completeDiscovery("اختبار الانحناء");
+    }
+
+  }, true);
+
+})();
